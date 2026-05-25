@@ -38,4 +38,14 @@ if ! python3 -c "import gspread, google.auth" 2>/dev/null; then
   }
 fi
 
+if ! python3 -c "import google.ads.googleads" 2>/dev/null; then
+  pip install --quiet --disable-pip-version-check google-ads >&2 || \
+    echo "[session-start] google-ads install failed (optional)" >&2
+fi
+
+if ! python3 -c "from google.analytics.data_v1beta import BetaAnalyticsDataClient" 2>/dev/null; then
+  pip install --quiet --disable-pip-version-check google-analytics-data >&2 || \
+    echo "[session-start] google-analytics-data install failed (optional)" >&2
+fi
+
 echo "[session-start] SA credentials ready at $SA_PATH" >&2

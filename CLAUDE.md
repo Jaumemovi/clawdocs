@@ -49,6 +49,39 @@ Aquest xat està registrat a la pestanya `Canals` del sheet General com:
 - Display OpenClaw: `claude-code:repo:Jaumemovi/clawdocs`
 - Alias curt: `Clawdocs`
 
+## Accés a Google Ads i GA4
+
+El hook `session-start.sh` instal·la les llibreries i deixa disponibles dos
+helpers reutilitzables:
+
+- **`.claude/helpers/ads.py`** — Google Ads via OAuth + MCC. Llegeix
+  credencials de les env vars `GOOGLE_ADS_*`. Funcions: `get_client()`,
+  `pull_campaigns(client, customer_id, start, end)`,
+  `pull_conversion_actions(client, customer_id)`,
+  `list_accessible_customers(client)`.
+
+- **`.claude/helpers/ga4.py`** — GA4 Data API via Service Account. El SA ha
+  d'estar afegit com a Viewer/Editor a cada propietat. Funcions:
+  `pull_purchases(property_id, start, end)`,
+  `pull_purchases_by_ad_campaign(property_id, start, end)`.
+
+Per a cada client cal apuntar a `Canals` (o a una columna nova/sheet del
+client):
+- `Google Ads Customer ID` (format `123-456-7890` o sense guions)
+- `GA4 Property ID` (9 dígits)
+
+Exemple d'ús des d'una sessió:
+
+```python
+import sys; sys.path.append("/home/user/clawdocs/.claude/helpers")
+from ads import get_client, pull_campaigns
+from ga4 import pull_purchases_by_ad_campaign
+
+ads = get_client()
+ads_rows = pull_campaigns(ads, "3823744676", "2026-05-15", "2026-05-22")
+ga4_rows = pull_purchases_by_ad_campaign("PROPERTY_ID", "2026-05-15", "2026-05-22")
+```
+
 ## Branca de treball
 
 La branca de treball per defecte ve indicada en el system prompt de la sessió

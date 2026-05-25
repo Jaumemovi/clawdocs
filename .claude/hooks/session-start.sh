@@ -23,8 +23,10 @@ chmod 600 "$SA_PATH"
 
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   echo "GOOGLE_APPLICATION_CREDENTIALS=$SA_PATH" >> "$CLAUDE_ENV_FILE"
+  echo "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/etc/ssl/certs/ca-certificates.crt" >> "$CLAUDE_ENV_FILE"
 else
   export GOOGLE_APPLICATION_CREDENTIALS="$SA_PATH"
+  export GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/etc/ssl/certs/ca-certificates.crt
 fi
 
 if ! python3 -c "import cryptography" 2>/dev/null || ! python3 -c "from cryptography.hazmat.bindings._rust import exceptions" 2>/dev/null; then

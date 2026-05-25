@@ -16,7 +16,12 @@ Llegeix credencials de variables d'entorn (configurades al Cloud env):
         print(r)
 """
 import os
+import re
 from google.ads.googleads.client import GoogleAdsClient
+
+
+def _clean(name):
+    return os.environ[name].strip().strip("<>").strip()
 
 
 def _config():
@@ -31,11 +36,11 @@ def _config():
     if missing:
         raise RuntimeError(f"Falten env vars: {missing}")
     return {
-        "developer_token": os.environ["GOOGLE_ADS_DEVELOPER_TOKEN"],
-        "client_id": os.environ["GOOGLE_ADS_CLIENT_ID"],
-        "client_secret": os.environ["GOOGLE_ADS_CLIENT_SECRET"],
-        "refresh_token": os.environ["GOOGLE_ADS_REFRESH_TOKEN"],
-        "login_customer_id": os.environ["GOOGLE_ADS_LOGIN_CUSTOMER_ID"],
+        "developer_token": _clean("GOOGLE_ADS_DEVELOPER_TOKEN"),
+        "client_id": _clean("GOOGLE_ADS_CLIENT_ID"),
+        "client_secret": _clean("GOOGLE_ADS_CLIENT_SECRET"),
+        "refresh_token": _clean("GOOGLE_ADS_REFRESH_TOKEN"),
+        "login_customer_id": re.sub(r"\D", "", _clean("GOOGLE_ADS_LOGIN_CUSTOMER_ID")),
         "use_proto_plus": True,
     }
 

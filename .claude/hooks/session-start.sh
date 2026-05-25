@@ -27,6 +27,10 @@ else
   export GOOGLE_APPLICATION_CREDENTIALS="$SA_PATH"
 fi
 
+if ! python3 -c "import cryptography" 2>/dev/null || ! python3 -c "from cryptography.hazmat.bindings._rust import exceptions" 2>/dev/null; then
+  pip install --quiet --ignore-installed cryptography cffi >&2 || true
+fi
+
 if ! python3 -c "import gspread, google.auth" 2>/dev/null; then
   pip install --quiet --disable-pip-version-check gspread google-auth >&2 || {
     echo "[session-start] pip install failed" >&2

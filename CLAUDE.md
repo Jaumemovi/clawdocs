@@ -55,20 +55,21 @@ La branca de treball per defecte ve indicada en el system prompt de la sessió
 (camp "Git Development Branch Requirements"). No canviar de branca sense
 permís explícit.
 
-## Bootstrap de sessió de client
+## Bootstrap de sessió
 
 Aquest repo serveix també com a base per a sessions Claude Code dedicades a
-un client concret. Cada sessió de client viu en la seva pròpia branca i queda
-**vinculada al sheet del client** (no al General) per a totes les anotacions.
+un àmbit concret (client extern o canal intern). Cada sessió viu en la seva
+pròpia branca i queda **vinculada al sheet de l'àmbit** (no al General) per
+a totes les anotacions.
 
 ### Frase disparadora
 
 Quan Jaume escriu en una sessió nova:
 
-> **"Bootstrap aquesta sessió per al client `<ALIAS>`."**
+> **"Bootstrap aquesta sessió per a `<ALIAS>`."**
 
 …la sessió ha d'executar el procediment següent **sense més preguntes** (si
-l'alias existeix a `Canals`):
+l'alias existeix a `Canals` i té `Sheet ID`):
 
 ### Procediment
 
@@ -86,42 +87,53 @@ l'alias existeix a `Canals`):
    row = next((r for r in rows if r["Alias curt"].strip().lower() == "<alias>".lower()), None)
    ```
 
-   Si `row is None` → atura't i demana a Jaume que primer registri el client
+   Si `row is None` → atura't i demana a Jaume que primer registri l'àmbit
    (no inventis fila).
 3. Extreu: `Sheet seguiment` (nom), `Sheet ID`, `Agents actius`,
    `Ús principal`, `Cadència`, `Notes agents`.
-4. **Sobreescriu** el `CLAUDE.md` d'aquesta branca amb una plantilla de
-   client (veure sota), substituint la regla d'anotació perquè apunti al
-   sheet del client en comptes del General.
+
+   **Si `Sheet ID` està buit o és `pendent crear`** → atura't i pregunta a
+   Jaume:
+   > "L'alias `<ALIAS>` no té sheet associat a `Canals`. Vols:
+   > (a) crear-ne un nou (digues nom i quina plantilla: client setmanal,
+   > seguiment personal, etc.),
+   > (b) vincular provisionalment al General, o
+   > (c) cancel·lar el bootstrap?"
+
+   Segons la resposta: crea el sheet (compartint-lo amb el SA), actualitza
+   la fila de `Canals` amb el nou `Sheet seguiment`/`Sheet ID`, i continua.
+4. **Sobreescriu** el `CLAUDE.md` d'aquesta branca amb la plantilla de
+   sessió d'àmbit (veure sota), substituint la regla d'anotació perquè
+   apunti al sheet de l'àmbit en comptes del General.
 5. Registra la sessió a la pestanya `Sessions actives` del sheet General:
 
    ```python
    sessions = gen.worksheet("Sessions actives")
    sessions.append_row([
        "<YYYY-MM-DD>",          # Data obertura
-       "<ALIAS>",               # Client alias
+       "<ALIAS>",               # Client alias (o àmbit intern)
        "Jaumemovi/clawdocs",    # Repo
        "<branca actual>",       # Branca (de git branch --show-current)
-       "<Sheet seguiment>",     # Sheet client
-       "<Sheet ID>",            # Sheet client ID
+       "<Sheet seguiment>",     # Sheet vinculat
+       "<Sheet ID>",            # Sheet ID
        "actiu",                 # Estat
        "<YYYY-MM-DD>",          # Última activitat
        "Bootstrap automàtic via CLAUDE.md de clawdocs.",
    ], value_input_option="USER_ENTERED")
    ```
 6. Commit + push del nou `CLAUDE.md` a la branca actual.
-7. Confirma a Jaume: "Sessió vinculada al sheet **\<Sheet seguiment\>** del
-   client **\<ALIAS\>**. A partir d'ara *anota X* va aquí."
+7. Confirma a Jaume: "Sessió vinculada al sheet **\<Sheet seguiment\>**
+   per a **\<ALIAS\>**. A partir d'ara *anota X* va aquí."
 
-### Plantilla de CLAUDE.md per a sessió de client
+### Plantilla de CLAUDE.md per a sessió d'àmbit
 
 ```markdown
-# Sessió Claude Code — Client <ALIAS>
+# Sessió Claude Code — <ALIAS>
 
-Sessió dedicada al client **<ALIAS>**. Vinculada al sheet de seguiment
-del client (no al General).
+Sessió dedicada a **<ALIAS>**. Vinculada al sheet de seguiment
+corresponent (no al General).
 
-## Sheet del client
+## Sheet vinculat
 
 - **Title**: `<Sheet seguiment>`
 - **ID**: `<Sheet ID>`
@@ -129,7 +141,7 @@ del client (no al General).
 - **Accés**: Service Account
   `claude-cloud@clawdocs-492614.iam.gserviceaccount.com`.
 
-## Context del client
+## Context
 
 - **Ús principal**: <Ús principal>
 - **Agents actius**: <Agents actius>
@@ -139,7 +151,7 @@ del client (no al General).
 ## Regla d'anotació
 
 Quan Jaume diu **"anota X"** / **"apunta X"** / **"registra X"** en aquest
-xat, escriu al sheet del client (no al General):
+xat, escriu al sheet vinculat (no al General):
 
 ```python
 import gspread
@@ -162,5 +174,5 @@ coordinador de clawdocs hi té visibilitat.
 ### Si l'alias no existeix
 
 Diu a Jaume: "L'alias `<ALIAS>` no està a `Canals` del sheet General. Vols
-que el creï? Em cal: nom complet, sheet de seguiment (ID o crear nou),
-agents actius i cadència de reporting."
+que el creï? Em cal: nom complet, tipus (client/intern), sheet de seguiment
+(ID o crear nou), agents actius i cadència de reporting."

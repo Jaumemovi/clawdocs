@@ -51,5 +51,116 @@ Aquest xat està registrat a la pestanya `Canals` del sheet General com:
 
 ## Branca de treball
 
-Aquesta sessió desenvolupa sobre `claude/cool-hopper-YjVtf`. No canviar de
-branca sense permís explícit.
+La branca de treball per defecte ve indicada en el system prompt de la sessió
+(camp "Git Development Branch Requirements"). No canviar de branca sense
+permís explícit.
+
+## Bootstrap de sessió de client
+
+Aquest repo serveix també com a base per a sessions Claude Code dedicades a
+un client concret. Cada sessió de client viu en la seva pròpia branca i queda
+**vinculada al sheet del client** (no al General) per a totes les anotacions.
+
+### Frase disparadora
+
+Quan Jaume escriu en una sessió nova:
+
+> **"Bootstrap aquesta sessió per al client `<ALIAS>`."**
+
+…la sessió ha d'executar el procediment següent **sense més preguntes** (si
+l'alias existeix a `Canals`):
+
+### Procediment
+
+1. Assegura't que el hook `.claude/hooks/session-start.sh` ja ha exportat
+   `GOOGLE_APPLICATION_CREDENTIALS`. Si no, executa'l manualment.
+2. Llegeix la fila del client a la pestanya `Canals` del sheet General
+   buscant per `Alias curt` (case-insensitive):
+
+   ```python
+   import gspread
+   gc = gspread.service_account(filename="/root/.secrets/claude-cloud-sa.json")
+   gen = gc.open_by_key("1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q")
+   canals = gen.worksheet("Canals")
+   rows = canals.get_all_records()
+   row = next((r for r in rows if r["Alias curt"].strip().lower() == "<alias>".lower()), None)
+   ```
+
+   Si `row is None` → atura't i demana a Jaume que primer registri el client
+   (no inventis fila).
+3. Extreu: `Sheet seguiment` (nom), `Sheet ID`, `Agents actius`,
+   `Ús principal`, `Cadència`, `Notes agents`.
+4. **Sobreescriu** el `CLAUDE.md` d'aquesta branca amb una plantilla de
+   client (veure sota), substituint la regla d'anotació perquè apunti al
+   sheet del client en comptes del General.
+5. Registra la sessió a la pestanya `Sessions actives` del sheet General:
+
+   ```python
+   sessions = gen.worksheet("Sessions actives")
+   sessions.append_row([
+       "<YYYY-MM-DD>",          # Data obertura
+       "<ALIAS>",               # Client alias
+       "Jaumemovi/clawdocs",    # Repo
+       "<branca actual>",       # Branca (de git branch --show-current)
+       "<Sheet seguiment>",     # Sheet client
+       "<Sheet ID>",            # Sheet client ID
+       "actiu",                 # Estat
+       "<YYYY-MM-DD>",          # Última activitat
+       "Bootstrap automàtic via CLAUDE.md de clawdocs.",
+   ], value_input_option="USER_ENTERED")
+   ```
+6. Commit + push del nou `CLAUDE.md` a la branca actual.
+7. Confirma a Jaume: "Sessió vinculada al sheet **\<Sheet seguiment\>** del
+   client **\<ALIAS\>**. A partir d'ara *anota X* va aquí."
+
+### Plantilla de CLAUDE.md per a sessió de client
+
+```markdown
+# Sessió Claude Code — Client <ALIAS>
+
+Sessió dedicada al client **<ALIAS>**. Vinculada al sheet de seguiment
+del client (no al General).
+
+## Sheet del client
+
+- **Title**: `<Sheet seguiment>`
+- **ID**: `<Sheet ID>`
+- **URL**: https://docs.google.com/spreadsheets/d/<Sheet ID>/edit
+- **Accés**: Service Account
+  `claude-cloud@clawdocs-492614.iam.gserviceaccount.com`.
+
+## Context del client
+
+- **Ús principal**: <Ús principal>
+- **Agents actius**: <Agents actius>
+- **Cadència reporting**: <Cadència>
+- **Notes**: <Notes agents>
+
+## Regla d'anotació
+
+Quan Jaume diu **"anota X"** / **"apunta X"** / **"registra X"** en aquest
+xat, escriu al sheet del client (no al General):
+
+```python
+import gspread
+gc = gspread.service_account(filename="/root/.secrets/claude-cloud-sa.json")
+sh = gc.open_by_key("<Sheet ID>")
+ws = sh.worksheet("<pestanya>")
+ws.append_row([...], value_input_option="USER_ENTERED")
+```
+
+Llegeix sempre la capçalera (`ws.row_values(1)`) abans d'escriure. Si tens
+dubtes sobre la pestanya, pregunta.
+
+## Coordinació
+
+Aquesta sessió està registrada a la pestanya `Sessions actives` del sheet
+**General** (`1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q`). El xat
+coordinador de clawdocs hi té visibilitat.
+```
+
+### Si l'alias no existeix
+
+Diu a Jaume: "L'alias `<ALIAS>` no està a `Canals` del sheet General. Vols
+que el creï? Em cal: nom complet, sheet de seguiment (ID o crear nou),
+agents actius i cadència de reporting."

@@ -19,6 +19,14 @@ import os
 from google.ads.googleads.client import GoogleAdsClient
 
 
+def _clean(value, digits_only=False):
+    import re as _re
+    v = (value or "").strip().strip("<>").strip()
+    if digits_only:
+        v = _re.sub(r"\D", "", v)
+    return v
+
+
 def _config():
     required = [
         "GOOGLE_ADS_DEVELOPER_TOKEN",
@@ -31,11 +39,11 @@ def _config():
     if missing:
         raise RuntimeError(f"Falten env vars: {missing}")
     return {
-        "developer_token": os.environ["GOOGLE_ADS_DEVELOPER_TOKEN"],
-        "client_id": os.environ["GOOGLE_ADS_CLIENT_ID"],
-        "client_secret": os.environ["GOOGLE_ADS_CLIENT_SECRET"],
-        "refresh_token": os.environ["GOOGLE_ADS_REFRESH_TOKEN"],
-        "login_customer_id": os.environ["GOOGLE_ADS_LOGIN_CUSTOMER_ID"],
+        "developer_token": _clean(os.environ["GOOGLE_ADS_DEVELOPER_TOKEN"]),
+        "client_id": _clean(os.environ["GOOGLE_ADS_CLIENT_ID"]),
+        "client_secret": _clean(os.environ["GOOGLE_ADS_CLIENT_SECRET"]),
+        "refresh_token": _clean(os.environ["GOOGLE_ADS_REFRESH_TOKEN"]),
+        "login_customer_id": _clean(os.environ["GOOGLE_ADS_LOGIN_CUSTOMER_ID"], digits_only=True),
         "use_proto_plus": True,
     }
 
@@ -119,10 +127,50 @@ def pull_conversion_actions(client, customer_id):
 
 
 def list_accessible_customers(client):
-    """Retorna llista de Customer IDs accessibles per l'MCC."""
+    """Retorna llista de Customer IDs accessibles directament per l'OAuth.
+
+    Normalment només mostra els MCCs/managers, no els clients que pengen
+    d'ells. Per veure tots els clients sota un MCC, usa list_clients_under_mcc.
+    """
     svc = client.get_service("CustomerService")
     accessible = svc.list_accessible_customers()
     return [name.split("/")[-1] for name in accessible.resource_names]
+
+
+def list_clients_under_mcc(client, mcc_customer_id=None):
+    """Retorna tots els comptes (clients) que pengen de l'MCC.
+
+    Si mcc_customer_id és None, agafa el LOGIN_CUSTOMER_ID de la config.
+    Retorna llista de dicts amb id, name, manager (bool), currency, time_zone.
+    """
+    if mcc_customer_id is None:
+        mcc_customer_id = _clean(os.environ.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID", ""), digits_only=True)
+    ga_service = client.get_service("GoogleAdsService")
+    query = """
+        SELECT
+          customer_client.id,
+          customer_client.descriptive_name,
+          customer_client.manager,
+          customer_client.currency_code,
+          customer_client.time_zone,
+          customer_client.status
+        FROM customer_client
+        WHERE customer_client.status = 'ENABLED'
+        ORDER BY customer_client.descriptive_name
+    """
+    results = []
+    stream = ga_service.search_stream(customer_id=_norm_cid(mcc_customer_id), query=query)
+    for batch in stream:
+        for row in batch.results:
+            cc = row.customer_client
+            results.append({
+                "id": str(cc.id),
+                "name": cc.descriptive_name,
+                "manager": cc.manager,
+                "currency": cc.currency_code,
+                "time_zone": cc.time_zone,
+            })
+    return results
 
 
 if __name__ == "__main__":

@@ -50,4 +50,9 @@ if ! python3 -c "from google.analytics.data_v1beta import BetaAnalyticsDataClien
     echo "[session-start] google-analytics-data install failed (optional)" >&2
 fi
 
+if ! python3 -c "from googleapiclient.discovery import build" 2>/dev/null; then
+  pip install --quiet --disable-pip-version-check google-api-python-client >&2 || \
+    echo "[session-start] google-api-python-client install failed (optional)" >&2
+fi
+
 echo "[session-start] SA credentials ready at $SA_PATH" >&2

@@ -49,9 +49,9 @@ Aquest xat està registrat a la pestanya `Canals` del sheet General com:
 - Display OpenClaw: `claude-code:repo:Jaumemovi/clawdocs`
 - Alias curt: `Clawdocs`
 
-## Accés a Google Ads i GA4
+## Accés a Google Ads, GA4 i Merchant Center
 
-El hook `session-start.sh` instal·la les llibreries i deixa disponibles dos
+El hook `session-start.sh` instal·la les llibreries i deixa disponibles tres
 helpers reutilitzables:
 
 - **`.claude/helpers/ads.py`** — Google Ads via OAuth + MCC. Llegeix
@@ -65,10 +65,23 @@ helpers reutilitzables:
   `pull_purchases(property_id, start, end)`,
   `pull_purchases_by_ad_campaign(property_id, start, end)`.
 
+- **`.claude/helpers/merchant.py`** — Merchant Center Content API v2.1 via
+  Service Account. El SA ha d'estar afegit com a Admin al MCA Moviéndote
+  (254198292) per accedir a tots els subcomptes. Funcions: `get_service()`,
+  `list_subaccounts(svc, mca_id)`, `pull_account_status(svc, merchant_id)`,
+  `pull_product_statuses(svc, merchant_id, only_with_issues=True)`,
+  `pull_disapproved_products(svc, merchant_id)`,
+  `pull_products(svc, merchant_id, max_results=250)`.
+
 Per a cada client cal apuntar a `Canals` (o a una columna nova/sheet del
 client):
 - `Google Ads Customer ID` (format `123-456-7890` o sense guions)
 - `GA4 Property ID` (9 dígits)
+- `Merchant Center ID` (9 dígits) — només si té ecommerce
+
+Subcomptes Merchant Center actuals (sota MCA Moviéndote 254198292):
+Lacoop (102897588), Farmacia Marimon (183443137), MarimonTcuida (159030506),
+Pozas (411164737).
 
 Exemple d'ús des d'una sessió:
 
@@ -76,10 +89,13 @@ Exemple d'ús des d'una sessió:
 import sys; sys.path.append("/home/user/clawdocs/.claude/helpers")
 from ads import get_client, pull_campaigns
 from ga4 import pull_purchases_by_ad_campaign
+from merchant import get_service, pull_disapproved_products
 
 ads = get_client()
 ads_rows = pull_campaigns(ads, "3823744676", "2026-05-15", "2026-05-22")
 ga4_rows = pull_purchases_by_ad_campaign("PROPERTY_ID", "2026-05-15", "2026-05-22")
+mc = get_service()
+disapproved = pull_disapproved_products(mc, "411164737")  # Pozas
 ```
 
 ## Branca de treball

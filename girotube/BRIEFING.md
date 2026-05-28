@@ -138,3 +138,50 @@ Tres opcions, parla-ho amb el Jaume:
 - [ ] Una execució real del cron post-fix verifica que escriu a `PLcc…`
 
 Si tens dubtes a qualsevol pas, atura't i pregunta al Jaume abans de continuar.
+
+---
+
+## Post-mortem — 2026-05-26
+
+Incident resolt seguint el pla. Resum executiu del que va passar i com va quedar:
+
+### Línia temporal
+
+- **2026-05-20 i abans:** cron legat `youtube_extend_5h_each.py` escrivint correctament a les playlists `PLcc...` d'@calnene.
+- **2026-05-21 10:05:** OAuth `invalid_grant: Token has been expired or revoked`.
+- **2026-05-21–22:** reautorització que va seleccionar per defecte el canal personal de l'usuari (NO @calnene).
+- **2026-05-23 23:00:** primera execució de `approved_only_sync` amb el nou token. Crea i alimenta playlists `PLzPacBemLhu...` al canal equivocat, sense que cap guarda detectés el desviament.
+- **2026-05-26:** Jaume detecta la divergència mirant el Sheet. 59 escriptures al lloc equivocat (36 Notícies + 13 Viatges + 7 Cuina + 2 Fabricando + 1 Emma).
+
+### Causa arrel
+
+Doble:
+1. Els IDs de playlist estaven hardcoded al codi del sync, no es llegien del Sheet.
+2. Cap pas del codi validava que l'OAuth pertanyés al canal esperat abans d'escriure.
+
+### Fix aplicat
+
+- `girotube/sheet_resolver.py` integrat al workspace de claw: `load_canonical_playlists()` llegeix la pestanya `Playlists`, `assert_youtube_owner()` aborta si `channels.list(mine=True).id != UCR-IFJOi-plA9i2Nn2lL1lw`.
+- Eliminats tots els IDs `PLzPacBemLhu...` hardcoded al codi i config (només queden a logs històrics i comentaris del script de recovery).
+- `Config!youtube_owner_channel_id = UCR-IFJOi-plA9i2Nn2lL1lw` afegit com a guarda al Sheet.
+- Bonus: throttling a `search.list` al cron legat per evitar 429 per límit de 10 cerques/min.
+
+### Recuperació
+
+`girotube/recover_missynced.py --skip-news` va recuperar **23/23 vídeos familiars** a les `PLcc...` correctes (6 added + 17 already_present d'un primer llançament que no va imprimir sortida visible). Les 36 entrades de Notícies es van descartar perquè eren `replaced_today` (notícies caducades).
+
+### Estat final
+
+- Crons reactivats:
+  - `Girotube - 10 vídeos bons diaris` a les 09:20 Europe/Madrid.
+  - `Girotube - actualitzar Notícies avui` a les 09:45 i 19:45 Europe/Madrid.
+- 5 playlists actives al cron principal: Viatges, Cuina, Fabricando, Emma, Arquitectura — totes amb ID canònic.
+- Playlist Ciència fora del cron fins que tingui playlist ID al Sheet.
+- Playlists `PLzPacBemLhu...` (5) deixades òrfenes al canal equivocat. **Revisió per esborrar-les: 2026-06-04.**
+
+### Per blindar-ho a futur
+
+- L'assert d'identitat OAuth és la guarda definitiva: encara que un altre cop l'OAuth es reautoritzi malament, el codi avortarà amb un error clar enlloc d'escriure al lloc equivocat.
+- El Sheet és ara la font única de veritat de playlist IDs. Per afegir o moure una playlist, només cal editar el Sheet — no cal tocar codi.
+- Vigilar la primera execució post-fix (2026-05-27 09:20): si la pestanya `Videos` registra entrades amb `Playlist ID` començant per `PLcc`, tot OK.
+

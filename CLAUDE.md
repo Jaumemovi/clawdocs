@@ -128,12 +128,19 @@ la pestanya **`Execució setmanal`** del sheet **General**
 ### Codi d'anotació
 
 ```python
-import gspread, datetime
+import gspread
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 gc = gspread.service_account(filename="/root/.secrets/claude-cloud-sa.json")
 sh = gc.open_by_key("1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q")
 ws = sh.worksheet("Execució setmanal")
 
-avui = datetime.date.today()
+# OBLIGATORI: usar timezone Europe/Madrid explícit.
+# El contenidor de Claude Code on the web corre en UTC; entre 00:00-02:00 CEST
+# (00:00-01:00 CET) datetime.date.today() retornaria el dia anterior i les
+# anotacions quedarien amb data incorrecta. Mai usar date.today() naïf.
+avui = datetime.now(ZoneInfo("Europe/Madrid")).date()
 iso_year, iso_week, _ = avui.isocalendar()
 setmana_iso = f"{iso_year}-W{iso_week:02d}"
 

@@ -15,7 +15,7 @@ sobre `Jaumemovi/clawdocs`. Està vinculat al sheet mestre **General**.
 Pestanyes rellevants (consulta abans d'escriure si no recordes l'estructura):
 `Canals`, `Agents`, `Mapa JID Sheets`, `Accions`, `Resum converses`,
 `Configuració`, `Connexions API Claude`, `Normes i docs`,
-`Planificació setmanal`.
+`Planificació setmanal`, `Execució setmanal`.
 
 ## Regla d'anotació
 
@@ -40,6 +40,52 @@ aquest xat:
    ws.append_row([...], value_input_option="USER_ENTERED")
    ```
 4. Confirma a Jaume amb la pestanya i resum del que s'ha escrit.
+
+## Registre d'execució setmanal (totes les sessions)
+
+Pestanya central del sheet General on **cada sessió de client/àmbit** apunta
+què ha fet i què queda pendent, perquè Jaume pugui veure des d'aquest xat
+de coordinació l'estat acumulat de la setmana sense entrar a cada sessió.
+
+- **Pestanya**: `Execució setmanal` del sheet General
+  (`1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q`).
+- **Columnes**: `Data` · `Setmana ISO` · `Client / àmbit` · `Sessió (branca/canal)` ·
+  `Què s'ha fet` · `Pendent / proper pas` · `Estat` · `Hores aprox.` · `Notes`.
+
+### Quan escriure
+
+Cada sessió de client/àmbit (les que es bootstrapen amb la plantilla d'àmbit)
+afegeix **una fila per bloc de treball** al final del bloc (quan Jaume tanca
+la sessió o canvia de client). Si en un mateix dia hi ha més d'un bloc per al
+mateix client, afegeix una fila nova per a cada bloc — no editis l'anterior.
+
+Estats vàlids: `fet`, `parcial`, `bloquejat`, `aplaçat`.
+
+### Codi
+
+```python
+import gspread, datetime as dt
+gc = gspread.service_account(filename="/root/.secrets/claude-cloud-sa.json")
+gen = gc.open_by_key("1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q")
+ws = gen.worksheet("Execució setmanal")
+today = dt.date.today()
+iso_year, iso_week, _ = today.isocalendar()
+ws.append_row([
+    today.isoformat(),                      # Data
+    f"{iso_year}-W{iso_week:02d}",          # Setmana ISO
+    "<ALIAS>",                              # Client / àmbit
+    "<branca git o nom canal>",             # Sessió
+    "<resum curt del que s'ha fet>",        # Què s'ha fet
+    "<què queda obert / proper pas>",       # Pendent
+    "fet",                                  # Estat
+    "<hores aprox., p.ex. 1.5>",            # Hores
+    "<notes opcionals>",                    # Notes
+], value_input_option="USER_ENTERED")
+```
+
+Aquesta fila és **addicional** al registre que la sessió ja fa al seu propi
+sheet d'àmbit. No reemplaça `Accions` ni `Resum converses` del General; és
+només l'agregat operatiu de la setmana.
 
 ## Registre d'aquest xat
 
@@ -202,6 +248,39 @@ dubtes sobre la pestanya, pregunta.
 Aquesta sessió està registrada a la pestanya `Sessions actives` del sheet
 **General** (`1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q`). El xat
 coordinador de clawdocs hi té visibilitat.
+
+## Registre d'execució setmanal (obligatori)
+
+Al final de cada bloc de treball (quan Jaume tanca la sessió o canvia de
+client) afegeix **una fila** a la pestanya `Execució setmanal` del sheet
+**General**, no al sheet d'àmbit. Això permet al xat coordinador
+(`Clawdocs coord`) veure l'estat acumulat de la setmana de tots els clients
+sense entrar a cada sessió.
+
+Columnes: `Data` · `Setmana ISO` · `Client / àmbit` · `Sessió (branca/canal)` ·
+`Què s'ha fet` · `Pendent / proper pas` · `Estat` · `Hores aprox.` · `Notes`.
+Estats vàlids: `fet`, `parcial`, `bloquejat`, `aplaçat`. Una fila per bloc
+(no editis files anteriors).
+
+```python
+import gspread, datetime as dt
+gc = gspread.service_account(filename="/root/.secrets/claude-cloud-sa.json")
+gen = gc.open_by_key("1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q")
+ws = gen.worksheet("Execució setmanal")
+today = dt.date.today()
+iso_year, iso_week, _ = today.isocalendar()
+ws.append_row([
+    today.isoformat(),
+    f"{iso_year}-W{iso_week:02d}",
+    "<ALIAS>",
+    "<branca o canal>",
+    "<resum del que s'ha fet>",
+    "<pendent / proper pas>",
+    "fet",                 # o parcial / bloquejat / aplaçat
+    "<hores aprox.>",
+    "",
+], value_input_option="USER_ENTERED")
+```
 ```
 
 ### Si l'alias no existeix

@@ -45,6 +45,29 @@ per la seva capçalera concreta.
    al C-ID).
 3. Si és una acció nova no llistada a P, afegir-la com a A-acció al final.
 
+### Registre d'execució setmanal (obligatori)
+
+Cada cop que es tanca un bloc de treball (sessió, conversa, mini-projecte),
+afegir una fila a la pestanya `Execució setmanal` del sheet **General**
+(`1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q`) amb aquestes columnes:
+
+- `Data`: data del tancament del bloc (YYYY-MM-DD).
+- `Setmana ISO`: ex. `2026-W22`.
+- `Client / àmbit`: nom del client (Pozas, Marimón…) o `Interno` si és feina
+  transversal.
+- `Sessió (branca/canal)`: branca git (`claude/...`) o canal d'origen.
+- `Què s'ha fet`: resum operatiu del bloc, en una línia o dues. Mateix
+  contingut sintetitzat que el `Tema` + `Resum` de la fila de `Converses`
+  del client.
+- `Pendent / proper pas`: què queda per fer després d'aquest bloc.
+- `Estat`: `Fet` / `En curs` / `Bloquejat`.
+- `Hores aprox.`: estimació honest del temps efectiu del bloc.
+- `Notes`: enllaços a commits, C-IDs, pestanyes modificades, etc.
+
+Aquesta fila s'afegeix **a més** de la fila de `Converses` del sheet client
+(no la substitueix): `Converses` documenta el detall per client, `Execució
+setmanal` és la vista transversal de tota la setmana per planificar.
+
 ### Fi de sessió (obligatori)
 
 Abans de tancar la sessió, afegir una fila a la pestanya `Converses` del

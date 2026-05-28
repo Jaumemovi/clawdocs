@@ -57,3 +57,43 @@ l'avaluació del 27/05: backlog 67% infra vs 7% client).
 Aquesta sessió està registrada a la pestanya `Sessions actives` del sheet
 **General** (`1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q`). El xat
 coordinador de clawdocs hi té visibilitat.
+
+## Registre d'execució setmanal (obligatori)
+
+Cada vegada que tanqui un **bloc de treball** (qualsevol unitat amb un
+inici i un final clars: report enviat, proposta enviada, acció executada,
+diagnòstic tancat, infra dropejada, etc.), apunto **una fila** a la
+pestanya `Execució setmanal` del sheet **General**
+(`1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q`).
+
+Columnes (en ordre exacte):
+
+1. **Data** — `YYYY-MM-DD` del tancament del bloc.
+2. **Setmana ISO** — format `YYYY-Www` (p. ex. `2026-W22`).
+3. **Client / àmbit** — `Monlau Motorsport` per defecte en aquesta sessió;
+   `clawdocs-infra` si és feina transversal.
+4. **Sessió (branca/canal)** — nom de la branca git activa
+   (p. ex. `claude/wizardly-davinci-eDeKB`) o canal d'origen.
+5. **Què s'ha fet** — frase curta i factual del bloc tancat.
+6. **Pendent / proper pas** — què queda obert (o `—` si està del tot tancat).
+7. **Estat** — `Fet` · `Parcial` · `Bloquejat` · `Esperant client`.
+8. **Hores aprox.** — estimació en hores (p. ex. `0.5`, `1.5`).
+9. **Notes** — referències útils (ID draft Gmail, commit hash, link Excel,
+   norma aplicada, etc.).
+
+Snippet:
+
+```python
+import gspread
+gc = gspread.service_account(filename="/root/.secrets/claude-cloud-sa.json")
+sh = gc.open_by_key("1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q")
+ws = sh.worksheet("Execució setmanal")
+ws.append_row([
+    "YYYY-MM-DD","YYYY-Www","Monlau Motorsport","<branca>",
+    "<què s'ha fet>","<pendent>","Fet","0.5","<notes>"
+], value_input_option="USER_ENTERED")
+```
+
+**Regla operativa**: el registre es fa **al moment de tancar el bloc**, no
+al final del dia ni de la setmana. Si dubto si una cosa compta com a bloc,
+l'apunto (millor sobre-registrar que perdre traça).

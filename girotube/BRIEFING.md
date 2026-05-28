@@ -185,3 +185,48 @@ Doble:
 - El Sheet és ara la font única de veritat de playlist IDs. Per afegir o moure una playlist, només cal editar el Sheet — no cal tocar codi.
 - Vigilar la primera execució post-fix (2026-05-27 09:20): si la pestanya `Videos` registra entrades amb `Playlist ID` començant per `PLcc`, tot OK.
 
+---
+
+## Arquitectura post-fix — 2026-05-26 (versió neta)
+
+Després del bug i la seva resolució, queda clar que el sistema són **tres processos independents**, no un. Així evita que tornin a aparèixer problemes com el del legat:
+
+```
+[1] Descoberta              [2] Aprovació              [3] Sincronització
+girotube_discover_           girotube_auto_            approved_only_sync
+candidates.py                approve_candidates.py     (cron 09:20)
+                                                       
+- Llegeix Canals_Girotube    - Llegeix candidates      - Llegeix approved
+- Per cada canal: UU playlist  del Sheet                del Sheet
+  (1 unit/crida)             - Aplica criteri:         - Insert a YouTube
+- Append a Candidats_         Score>=100, o            - Mai search.list
+  Editorial Status=candidate  alta-priority Score>=90  - assert_youtube_owner
+- Cap a YouTube (no escriu)  - Cap a YouTube           - Throttle suau
+- Scope: youtube.readonly    - Cap a Sheet escritura   - Scope: youtube
+- Cost: ~40 units/passada    - Cost: 0 units YT        - Cost: 50 units/video
+                             - Cap per canal/playl: 3
+```
+
+### Crons actius al sistema
+
+| Cron | Quan | Què fa | Quota YT |
+|---|---|---|---|
+| `approved_only_sync` (3) | 09:20 Europe/Madrid | Sync 50 approved → 5 PLcc... | ~2 500/dia |
+| `notícies` | 09:45 i 19:45 | Delete-replace 6 vídeos a Notícies | ~600/dia |
+| `discover_candidates` (1) | (a programar) | Omple candidates | ~40/passada |
+| `auto_approve_candidates` (2) | (a programar, després de 1) | Promou candidate → approved | 0 |
+| ~~`youtube_extend_5h_each.py`~~ | DEPRECATED | El legat. Marcat com a tal al codi, cron desactivat. | — |
+
+### Mètodes de mesura
+
+- **`Videos` pestanya** = log d'auditoria de tot el que el sync escriu (inclou Playlist ID).
+- **`Runs` pestanya** = log d'execucions amb estat i comptadors.
+- **Identitat OAuth** validada en cada execució per `assert_youtube_owner(UCR-IFJOi-plA9i2Nn2lL1lw)`.
+
+### Mètriques a vigilar
+
+- **Inventory aprovat** a `Candidats_Editorial`: ha de ser ≥ 50 per garantir el dia següent.
+- **Taxa d'auto-aprovació**: amb el criteri actual (Score≥100, o priority=alta amb Score≥90, cap 3), la primera estimació era 2/88 ≈ 2,3% — possiblement massa restrictiva. Si la cua baixa sota 50, afluixar el llindar o pujar el cap.
+- **Quota YouTube**: si una execució retorna `quotaExceeded`, marcar el run com `error_quota` i no fer retries automàtics el mateix dia.
+
+

@@ -17,6 +17,11 @@ Llegeix credencials de variables d'entorn (configurades al Cloud env):
 """
 import os
 import re
+
+os.environ.setdefault(
+    "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH", "/etc/ssl/certs/ca-certificates.crt"
+)
+
 from google.ads.googleads.client import GoogleAdsClient
 
 

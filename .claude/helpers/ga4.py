@@ -11,6 +11,12 @@ cada propietat GA4 que es vulgui consultar.
     for r in rows:
         print(r)
 """
+import os
+
+os.environ.setdefault(
+    "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH", "/etc/ssl/certs/ca-certificates.crt"
+)
+
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import (
     DateRange, Dimension, Metric, RunReportRequest, FilterExpression, Filter,

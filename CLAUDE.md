@@ -104,6 +104,65 @@ La branca de treball per defecte ve indicada en el system prompt de la sessió
 (camp "Git Development Branch Requirements"). No canviar de branca sense
 permís explícit.
 
+## Registre d'execució setmanal (obligatori)
+
+Cada cop que es tanqui un **bloc de treball** (fi d'una franja del planning,
+fi d'una tasca rellevant, o fi de sessió Claude Code) cal anotar una fila a
+la pestanya **`Execució setmanal`** del sheet **General**
+(`1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q`). No és opcional.
+
+### Columnes (capçalera ja existent — respectar ordre)
+
+| Columna | Contingut |
+|---|---|
+| `Data` | Format `YYYY-MM-DD` |
+| `Setmana ISO` | Format `2026-W22` (calcular amb `datetime.date.isocalendar()`) |
+| `Client / àmbit` | Client (Lacoop, Pozas, Marimon...) o àmbit (Infra, Personal, Renda, Girofeeds intern...) |
+| `Sessió (branca/canal)` | Nom de la branca git actual o canal d'origen (ex: `claude/cool-hopper-YjVtf` o `Clawdocs coord`) |
+| `Què s'ha fet` | Resum factual concret del bloc (1-3 línies, sense floritura) |
+| `Pendent / proper pas` | Què queda obert després d'aquest bloc |
+| `Estat` | `Fet` / `Parcial` / `Bloquejat` / `Pausa` |
+| `Hores aprox.` | Decimal, ex: `0.75`, `1.5` |
+| `Notes` | Observacions opcionals (problemes, decisions, riscos) |
+
+### Codi d'anotació
+
+```python
+import gspread, datetime
+gc = gspread.service_account(filename="/root/.secrets/claude-cloud-sa.json")
+sh = gc.open_by_key("1NXct3wMopbaPeSzLDVRehjf91hzLRhGPC6RG_yVvV6Q")
+ws = sh.worksheet("Execució setmanal")
+
+avui = datetime.date.today()
+iso_year, iso_week, _ = avui.isocalendar()
+setmana_iso = f"{iso_year}-W{iso_week:02d}"
+
+ws.append_row([
+    avui.isoformat(),
+    setmana_iso,
+    "<Client o àmbit>",
+    "<branca git o canal>",
+    "<Què s'ha fet>",
+    "<Pendent / proper pas>",
+    "<Fet|Parcial|Bloquejat|Pausa>",
+    "<hores aprox>",
+    "<notes opcionals>",
+], value_input_option="USER_ENTERED")
+```
+
+### Quan anotar
+
+- **Final de cada franja del planning** (Pozas 10:00-11:00 → fi franja → anotar)
+- **Final d'una tasca puntual rellevant** que no estava al planning fix (resposta a un mail urgent, gestió d'una incidència)
+- **Final de sessió Claude Code** (abans de tancar)
+- **Pausa llarga inesperada** (interrupció >1h) → anotar com a `Parcial` o `Pausa`
+
+### Què NO cal anotar
+
+- Bloc de menys de 15 minuts sense impacte (revisar un mail, etc.)
+- Activitats personals fora de la franja de feina (gym, escola, dinar)
+- Tasques merament administratives mecàniques (renovar contrasenya, etc.)
+
 ## Bootstrap de sessió
 
 Aquest repo serveix també com a base per a sessions Claude Code dedicades a
